@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Пост{% endblock %}
+{% block content %}
+{% load user_filters %}
+{% include 'includes/author_card.html' %} 
+
+        <div class="col-md-9">
+
+            <!-- Пост -->
+            {% include 'includes/post_card.html' with post=post %}
+
+        </div>
+
+        {% include 'includes/comments.html' %}
+{% endblock %}

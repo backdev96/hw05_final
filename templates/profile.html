@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Записи пользователя {{ profile }}{% endblock %}
+{% block header %}{{ profile }}{% endblock %}
+{% block content %}
+{% load user_filters %}
+
+{% include 'includes/author_card.html' %}
+<li class="list-group-item">
+
+
+                <!-- Начало блока с отдельным постом -->
+                {% for post in page %}
+                        {% include 'includes/post_card.html' with post=post %}
+                <!-- Конец блока с отдельным постом --> 
+                {% endfor %}
+                <!-- Остальные посты -->  
+
+                <!-- Здесь постраничная навигация паджинатора -->
+                {% if page.has_other_pages %}
+                        {% include "includes/paginator.html" with items=page paginator=paginator %}
+                {% endif %}
+                {% endblock %}
+     </div>
+    </div>
+</main>
