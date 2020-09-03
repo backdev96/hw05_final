@@ -19,7 +19,7 @@ class Post(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts', null=True)
     group = models.ForeignKey(Group, on_delete=models.SET_NULL, blank=True, null=True,
                               related_name='posts', verbose_name='Группа', help_text='Выберите группу')
-    image = models.ImageField(upload_to='posts/', blank=True, null=True) 
+    image = models.ImageField(upload_to='posts/', blank=True, null=True)
 
     class Meta:
         ordering = ('-pub_date',)
@@ -37,6 +37,7 @@ class Comment(models.Model):
 
     class Meta:
         ordering = ('-created',)
+
 
 class Follow(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="follower")

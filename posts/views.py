@@ -1,10 +1,11 @@
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
-
-from .forms import PostForm, CommentForm
-from .models import Group, Post, User, Comment, Follow
 from django.views.decorators.cache import cache_page
+
+from .forms import CommentForm, PostForm
+from .models import Comment, Follow, Group, Post, User
+
 
 @cache_page(20, key_prefix="index_page")
 def index(request):
@@ -67,7 +68,7 @@ def post_edit(request, username, post_id):
     if form.is_valid():
         form.save()
         return redirect('post', username=author, post_id=post_id)
-    return render(request, 'post_new.html', {'form': form, 'author': author, 'post': post}) 
+    return render(request, 'post_new.html', {'form': form, 'author': author, 'post': post})
 
 
 def post_view(request, username, post_id):
@@ -87,15 +88,15 @@ def post_view(request, username, post_id):
                }
     return render(request, 'post.html', context)
 
+
 def page_not_found(request, exception):
-    # Переменная exception содержит отладочную информацию, 
-    # выводить её в шаблон пользователской страницы 404 мы не станем
     return render(
-        request, 
-        "misc/404.html", 
-        {"path": request.path}, 
+        request,
+        "misc/404.html",
+        {"path": request.path},
         status=404
     )
+
 
 @login_required
 def add_comment(request, username, post_id):
@@ -104,7 +105,7 @@ def add_comment(request, username, post_id):
     items = post.comments.all()
     if request.method != 'POST':
         form = CommentForm()
-        return render(request, 'comments.html', {'form': form, 'post': post,'user': user,'items': items})
+        return render(request, 'comments.html', {'form': form, 'post': post, 'user': user, 'items': items})
     form = CommentForm(request.POST)
     if form.is_valid():
         comment_new = form.save(commit=False)
@@ -112,7 +113,8 @@ def add_comment(request, username, post_id):
         comment_new.author = request.user
         comment_new.save()
         return redirect('post', username=username, post_id=post_id)
-    return render(request, 'comments.html', {'form': form,'post': post,'user': user,'items': items})
+    return render(request, 'comments.html', {'form': form, 'post': post, 'user': user, 'items': items})
+
 
 @login_required
 def follow_index(request):
@@ -121,18 +123,19 @@ def follow_index(request):
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
     context = {
-        'page':page,
-        'paginator':paginator,
-        'page_number':page_number
+        'page': page,
+        'paginator': paginator,
+        'page_number': page_number
     }
     return render(request, "follow.html", context)
+
 
 @login_required
 def profile_follow(request, username):
     user = request.user
     author = get_object_or_404(User, username=username)
     if user != author:
-        follow = Follow.objects.get_or_create(user=user, author=author)   
+        follow = Follow.objects.get_or_create(user=user, author=author)
     return redirect('profile', username=username)
 
 
@@ -143,6 +146,7 @@ def profile_unfollow(request, username):
     follow = Follow.objects.filter(user=user, author=author)
     follow.delete()
     return redirect('profile', username=username)
+
 
 def server_error(request):
     return render(request, "misc/500.html", status=500)

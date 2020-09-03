@@ -1,11 +1,13 @@
+from io import BytesIO
+
+from django.core.cache import cache
+from django.core.files.base import File
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
-
-from .models import Group, Post, User, Follow
-from django.core.files.uploadedfile import SimpleUploadedFile
-from io import BytesIO
 from PIL import Image, ImageDraw
-from django.core.files.base import File
+
+from .models import Follow, Group, Post, User
 
 
 class ProfileTest(TestCase):
@@ -34,14 +36,14 @@ class ProfileTest(TestCase):
             b'\x02\x4c\x01\x00\x3b'
         )
         self.img = SimpleUploadedFile(name='some.gif',
-                                 content=self.small_gif,
-                                 content_type='image/gif',
-                                )
+                                      content=self.small_gif,
+                                      content_type='image/gif',
+                                      )
         self.post = Post.objects.create(
                 text='try_text',
                 author=self.user,
                 group=self.group,
-                image = self.img
+                image=self.img
                 )
         self.text = 'text_text'
         self.url_list = (reverse('index'),
@@ -105,7 +107,7 @@ class ProfileTest(TestCase):
         target_url = f'{login_url}?next={new_post_url}'
         self.assertRedirects(response,  f'{target_url}')
         self.assertEqual(Post.objects.count(), 1)
-    
+
     def test_404(self):
         response = self.auth_client.get('/auth/test404')
         self.assertEqual(response.status_code, 404)
@@ -117,25 +119,25 @@ class ProfileTest(TestCase):
         image.save(file_obj, ext)
         file_obj.seek(0)
         return File(file_obj, name=name)
- 
+
     def test_with_picture(self):
         for url in self.url_list:
             with self.subTest(url=url):
                 response = self.client.get(url)
                 self.assertContains(response, '<img')
- 
+
     def test_without_picture(self):
         not_image = SimpleUploadedFile(
             name='some.txt',
             content=b'abc',
             content_type='text/plain',
         )
- 
+
         url = reverse('new_post')
         response = self.auth_client.post(
             url, {'text': 'some_text', 'image': not_image}
         )
- 
+
         self.assertFormError(
             response,
             'form',
@@ -146,28 +148,29 @@ class ProfileTest(TestCase):
                 'или не является изображением.'
             ),
         )
-    
+
     def test_user_follow(self):
-        response = self.client.post(
-            reverse('profile_follow'), 
-            kwargs={self.user.username},follow=True
-            )
+        follow_second_user = self.auth_client.get(
+            reverse("profile_follow", args=[self.second_user.username]))
+        response = self.auth_client.get(reverse("follow_index"))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Follow.objects.count(), 1)
-        
+
     def test_user_unfollow(self):
-        follow = Follow.objects.create(author=self.user, user=self.second_user)
-        response = self.client.post(
-            reverse('profile_unfollow'),
-            args=[self.second_user], follow=True
-            )
+        unfollow_second_user = self.auth_client.get(
+            reverse("profile_unfollow", args=[self.second_user.username]))
+        response = self.auth_client.get(reverse("follow_index"))
+        self.assertContains(unfollow_second_user, "Отписаться")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Follow.objects.count(), 0)
-    
+
     def test_comment(self):
         response = self.auth_client.post(
-            reverse('add_comment', args=[self.user.username],follow=True))
+            reverse('add_comment', args=[self.second_user.username], follow=True))
         login_url = reverse('login')
         add_comment_url = reverse('add_comment')
         target_url = f'{login_url}?next={add_comment_url}'
         self.assertRedirects(response,  f'{target_url}')
+
+    def test_cache(self):
+        pass
