@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load user_filters %}
+{% block content %}
 {% if user.is_authenticated %}
 <div class="card my-4">
 <form
@@ -34,3 +35,4 @@
 </div>
 
 {% endfor %}
+{% endblock %}

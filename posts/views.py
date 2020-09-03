@@ -71,19 +71,21 @@ def post_edit(request, username, post_id):
 
 
 def post_view(request, username, post_id):
-    author = get_object_or_404(User, username=username)
-    post = get_object_or_404(Post, author=author.id, id=post_id)
-    posts_count = Post.objects.filter(author=post.author).count()
+    post = get_object_or_404(Post, id=post_id, author__username=username)
+    post_list = post.author.posts.all()
+    length = post_list.count()
     comments = post.comments.all()
-    follower = Follow.objects.filter(author=author).count()
+    form = CommentForm()
     user = request.user
-    return render(request, 'post.html', {
-        'posts_count': posts_count,
-        'post': post,
-        'author': author,
-        'items': comments,
-        'form': CommentForm(),
-    })
+    author = get_object_or_404(User, username=username)
+    follower = Follow.objects.filter(author=author).count()
+    followed = Follow.objects.filter(user=author).count()
+    context = {'author': post.author, 'post': post,
+               'length': length, 'items': comments,
+               'form': form, 'user': user,
+               'follower': follower, 'followed': followed,
+               }
+    return render(request, 'post.html', context)
 
 def page_not_found(request, exception):
     # Переменная exception содержит отладочную информацию, 
@@ -97,23 +99,20 @@ def page_not_found(request, exception):
 
 @login_required
 def add_comment(request, username, post_id):
-    form = CommentForm(request.POST or None)
-    post = get_object_or_404(Post, author__username=username, id=post_id)
+    post = get_object_or_404(Post, id=post_id)
+    user = request.user
     items = post.comments.all()
-    author = get_object_or_404(User, username=username)
+    if request.method != 'POST':
+        form = CommentForm()
+        return render(request, 'comments.html', {'form': form, 'post': post,'user': user,'items': items})
+    form = CommentForm(request.POST)
     if form.is_valid():
-        comment = form.save(commit=False)
-        comment.post = post
-        comment.author = request.user
-        comment.save()
-        return redirect('post', username = username, post_id=post_id)
-    context = {
-        'post': post,
-        'form': form,
-        'items': items,
-        'author': author
-    }
-    return render(request, 'post.html', context)
+        comment_new = form.save(commit=False)
+        comment_new.post = post
+        comment_new.author = request.user
+        comment_new.save()
+        return redirect('post', username=username, post_id=post_id)
+    return render(request, 'comments.html', {'form': form,'post': post,'user': user,'items': items})
 
 @login_required
 def follow_index(request):

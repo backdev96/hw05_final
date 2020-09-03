@@ -18,15 +18,30 @@ class ProfileTest(TestCase):
                     email='test_user@test.com',
                     password='test_password'
                     )
+        self.second_user = User.objects.create_user(
+                           username='second_user',
+                           email='second_user@test.com',
+                           password='second_test_password'
+                           )
         self.auth_client.force_login(self.user)
         self.group = Group.objects.create(
                     title='test_group',
                     slug='test',
                     )
+        self.small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x00\x00\x00\x21\xf9\x04'
+            b'\x01\x0a\x00\x01\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02'
+            b'\x02\x4c\x01\x00\x3b'
+        )
+        self.img = SimpleUploadedFile(name='some.gif',
+                                 content=self.small_gif,
+                                 content_type='image/gif',
+                                )
         self.post = Post.objects.create(
                 text='try_text',
                 author=self.user,
                 group=self.group,
+                image = self.img
                 )
         self.text = 'text_text'
         self.url_list = (reverse('index'),
@@ -104,15 +119,6 @@ class ProfileTest(TestCase):
         return File(file_obj, name=name)
  
     def test_with_picture(self):
-        small_gif = (
-            b'\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x00\x00\x00\x21\xf9\x04'
-            b'\x01\x0a\x00\x01\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02'
-            b'\x02\x4c\x01\x00\x3b'
-        )
-        img = SimpleUploadedFile(name='some.gif',
-                                 content=small_gif,
-                                 content_type='image/gif',
-                                )
         for url in self.url_list:
             with self.subTest(url=url):
                 response = self.client.get(url)
@@ -144,25 +150,23 @@ class ProfileTest(TestCase):
     def test_user_follow(self):
         response = self.client.post(
             reverse('profile_follow'), 
-            args=[self.user],follow=True
+            kwargs={self.user.username},follow=True
             )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Follow.objects.count(), 1)
         
     def test_user_unfollow(self):
-        Follow.objects.create(author=self.user, user=self.user)
+        follow = Follow.objects.create(author=self.user, user=self.second_user)
         response = self.client.post(
             reverse('profile_unfollow'),
-            args=[self.user.username], follow=True
+            args=[self.second_user], follow=True
             )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Follow.objects.count(), 0)
     
     def test_comment(self):
         response = self.auth_client.post(
-            reverse('add_comment', kwargs={'username': self.user.username, 'post.id':self.post.id}),
-            {'text': 'qwe'}, follow=True
-            )
+            reverse('add_comment', args=[self.user.username],follow=True))
         login_url = reverse('login')
         add_comment_url = reverse('add_comment')
         target_url = f'{login_url}?next={add_comment_url}'
