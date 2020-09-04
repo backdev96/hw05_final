@@ -30,20 +30,10 @@ class ProfileTest(TestCase):
                     title='test_group',
                     slug='test',
                     )
-        self.small_gif = (
-            b'\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x00\x00\x00\x21\xf9\x04'
-            b'\x01\x0a\x00\x01\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02'
-            b'\x02\x4c\x01\x00\x3b'
-        )
-        self.img = SimpleUploadedFile(name='some.gif',
-                                      content=self.small_gif,
-                                      content_type='image/gif',
-                                      )
         self.post = Post.objects.create(
                 text='try_text',
                 author=self.user,
                 group=self.group,
-                image=self.img
                 )
         self.text = 'text_text'
         self.url_list = (reverse('index'),
@@ -79,8 +69,7 @@ class ProfileTest(TestCase):
         self.search_post(self.url_list, self.text, self.user, self.group)
 
     def test_guest(self):
-        response = self.unauth_client.post(reverse
-                                           ('new_post'),
+        response = self.unauth_client.post(reverse('new_post'),
                                            kwargs={'text': 'text', 'group': self.group.id},
                                            follow=True)
         self.assertEqual(response.status_code, 200)
@@ -112,18 +101,26 @@ class ProfileTest(TestCase):
         response = self.auth_client.get('/auth/test404')
         self.assertEqual(response.status_code, 404)
 
-    @staticmethod
-    def get_image_file(name, ext='png', size=(50, 50), color=(256, 0, 0)):
-        file_obj = BytesIO()
-        image = Image.new("RGBA", size=size, color=color)
-        image.save(file_obj, ext)
-        file_obj.seek(0)
-        return File(file_obj, name=name)
-
     def test_with_picture(self):
+        small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x00\x00\x00\x21\xf9\x04'
+            b'\x01\x0a\x00\x01\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02'
+            b'\x02\x4c\x01\x00\x3b'
+        )
+        img = SimpleUploadedFile(
+            name='some.gif',
+            content=small_gif,
+            content_type='image/gif',
+        )
+        post_with_img = Post.objects.create(
+            author=self.user,
+            text='text',
+            group=self.group,
+            image=img,
+        )
         for url in self.url_list:
             with self.subTest(url=url):
-                response = self.client.get(url)
+                response = self.auth_client.get(url)
                 self.assertContains(response, '<img')
 
     def test_without_picture(self):
@@ -160,7 +157,6 @@ class ProfileTest(TestCase):
         unfollow_second_user = self.auth_client.get(
             reverse("profile_unfollow", args=[self.second_user.username]))
         response = self.auth_client.get(reverse("follow_index"))
-        self.assertContains(unfollow_second_user, "Отписаться")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Follow.objects.count(), 0)
 
@@ -173,4 +169,19 @@ class ProfileTest(TestCase):
         self.assertRedirects(response,  f'{target_url}')
 
     def test_cache(self):
+        cache_test_post_1 = Post.objects.create(
+           text='cache test text',
+           author=self.user,
+           group=self.group
+           )
+        response = self.auth_client.get(reverse('index'))
+        print(cache_test_post_1.text)
+        Post.objects.all().delete()
+        self.assertContains(response, cache_test_post_1.text)
+        cache.clear()
+        print(cache_test_post_1.text)
+        response = self.auth_client.get(reverse('index'))
+        self.assertNotContains(response, cache_test_post_1.text)
+
+    def test_new_post_in_feed(self):
         pass

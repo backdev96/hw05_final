@@ -83,9 +83,7 @@ def post_view(request, username, post_id):
     followed = Follow.objects.filter(user=author).count()
     context = {'author': post.author, 'post': post,
                'length': length, 'items': comments,
-               'form': form, 'user': user,
-               'follower': follower, 'followed': followed,
-               }
+               'form': form, 'user': user}
     return render(request, 'post.html', context)
 
 
