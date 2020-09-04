@@ -162,7 +162,7 @@ class ProfileTest(TestCase):
 
     def test_comment(self):
         response = self.auth_client.post(
-            reverse('add_comment', args=[self.second_user.username], follow=True))
+            reverse('add_comment', args=[self.second_user.username]), follow=True)
         login_url = reverse('login')
         add_comment_url = reverse('add_comment')
         target_url = f'{login_url}?next={add_comment_url}'
@@ -175,13 +175,29 @@ class ProfileTest(TestCase):
            group=self.group
            )
         response = self.auth_client.get(reverse('index'))
-        print(cache_test_post_1.text)
         Post.objects.all().delete()
         self.assertContains(response, cache_test_post_1.text)
         cache.clear()
-        print(cache_test_post_1.text)
         response = self.auth_client.get(reverse('index'))
         self.assertNotContains(response, cache_test_post_1.text)
 
     def test_new_post_in_feed(self):
-        pass
+        self.user3 = User.objects.create_user(
+                    username='user_user_user',
+                    email='test_user_user@test.com',
+                    password='test_password'
+                    )
+        follow_user2 = self.auth_client.get(
+            reverse("profile_follow", args=[self.second_user.username]
+            ))
+        post2 = Post.objects.create(
+                text='test_new_post_in_feed text',
+                author=self.second_user,
+                group=self.group,
+                )
+        self.assertEqual(len(Follow.objects.all()), 1)
+        response = self.auth_client.get(reverse("follow_index"))
+        self.assertContains(response, post2.text)
+        self.auth_client.force_login(self.user3)
+        response = self.auth_client.get(reverse("follow_index"))
+        self.assertNotContains(response, post2.text)
