@@ -78,9 +78,6 @@ def post_view(request, username, post_id):
     comments = post.comments.all()
     form = CommentForm()
     user = request.user
-    author = get_object_or_404(User, username=username)
-    follower = Follow.objects.filter(author=author).count()
-    followed = Follow.objects.filter(user=author).count()
     context = {'author': post.author, 'post': post,
                'length': length, 'items': comments,
                'form': form, 'user': user}
