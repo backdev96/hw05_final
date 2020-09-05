@@ -80,15 +80,13 @@ class ProfileTest(TestCase):
         self.assertEqual(Post.objects.count(), 1)
 
     def test_edit(self):
-        response = self.auth_client.post(reverse
-                                         ('new_post'),
-                                         kwargs={'text': 'text', 'group': self.group.id},
-                                         follow=False)
+        response = self.auth_client.post(reverse('new_post'),
+                                           kwargs={'text': 'text', 'group': self.group.id},
+                                           follow=False)
         self.search_post(self.url_list, self.text, self.user, self.group)
 
     def test_newpost_unauth_user(self):
-        response = self.unauth_client.post(reverse
-                                           ('new_post'),
+        response = self.unauth_client.post(reverse('new_post'),
                                            kwargs={'text': 'text', 'group': self.group.id},
                                            follow=True)
         login_url = reverse('login')
